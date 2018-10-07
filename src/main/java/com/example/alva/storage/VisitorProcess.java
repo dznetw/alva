@@ -1,31 +1,43 @@
-package com.example.alva.datamodel;
+package com.example.alva.storage;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import javax.servlet.http.HttpServletRequest;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class VisitorProcess {
+public class VisitorProcess implements AutoCloseable {
 
     private static final String API_BASE = "/api/v1";
     private static final String UPDATE_URL_FORMAT = "%s" + API_BASE + "/visitors/%s";
     private static final String RESULT_URL_FORMAT = "%s" + API_BASE + "/visitors/%s/result";
     @JsonProperty("process_id")
     private String id;
-    @JsonProperty("base_url")
-    private URL baseURL;
+    @JsonIgnore
+    private final Map<Integer, BlockingQueue<URI>> workingStack = new ConcurrentHashMap<>();
     @JsonProperty("process_status")
     private ProcessStatus status = ProcessStatus.ACTIVE;
     @JsonProperty("update_link")
     private String updateLink;
     @JsonProperty("result_link")
     private String resultLink;
+    @JsonProperty("base_uri")
+    private URI baseURI;
+    @JsonIgnore
+    private URL baseURL;
 
     public VisitorProcess(final HttpServletRequest request, final URL baseURL) {
         this.id = UUID.randomUUID().toString();
+        this.baseURI = URI.create(baseURL.toString());
         this.baseURL = baseURL;
         this.updateLink = createUpdateLink(request, this.id);
         this.resultLink = createResultLink(request, this.id);
@@ -33,6 +45,18 @@ public class VisitorProcess {
 
     public VisitorProcess(final URL baseURL) {
         this(null, baseURL);
+    }
+
+    public VisitorProcess(final URI uri) {
+        this(convertURI(uri));
+    }
+
+    private static URL convertURI(final URI uri) {
+        try {
+            return uri.toURL();
+        } catch (final MalformedURLException e) {
+            throw new IllegalArgumentException("Cannot transform URI " + uri, e);
+        }
     }
 
     private static String createUpdateLink(final HttpServletRequest request, final String id) {
@@ -61,42 +85,51 @@ public class VisitorProcess {
         return this.id;
     }
 
-    public void setId(final String id) {
-        if (this.id == null) {
-            this.id = id;
-        }
+    public URI getBaseURI() {
+        return this.baseURI;
     }
 
     public URL getBaseURL() {
         return this.baseURL;
     }
 
-    public void setBaseURL(final URL baseURL) {
-        this.baseURL = baseURL;
-    }
-
     public ProcessStatus getStatus() {
         return this.status;
-    }
-
-    public void setStatus(final ProcessStatus status) {
-        this.status = status;
     }
 
     public String getUpdateLink() {
         return this.updateLink;
     }
 
-    public void setUpdateLink(final String updateLink) {
-        this.updateLink = updateLink;
-    }
-
     public String getResultLink() {
         return this.resultLink;
     }
 
-    public void setResultLink(final String resultLink) {
-        this.resultLink = resultLink;
+    public void addFoundURIs(final int recursionLevel, final Queue<URI> uris) {
+        if (this.status != ProcessStatus.ACTIVE) {
+            return;
+        }
+
+        if (!this.workingStack.containsKey(recursionLevel)) {
+            this.workingStack.put(recursionLevel, new LinkedBlockingQueue<>());
+        }
+        this.workingStack.get(recursionLevel).addAll(uris);
+    }
+
+    public BlockingQueue<URI> takeURIs(final int recursionLevel) {
+        if (!this.workingStack.containsKey(recursionLevel)) {
+            return new LinkedBlockingQueue<>();
+        }
+        final BlockingQueue<URI> queue = this.workingStack.get(recursionLevel);
+        final BlockingQueue<URI> newQueue = new LinkedBlockingQueue<>(queue);
+
+        queue.clear();
+        return newQueue;
+    }
+
+    @Override
+    public void close() {
+        this.status = ProcessStatus.DONE;
     }
 
     public enum ProcessStatus {
