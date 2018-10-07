@@ -10,8 +10,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import com.example.alva.datamodel.VisitorProcess;
-
 public class InMemoryProcessStorageTest extends CacheBasedStorageContractVerifier<String, VisitorProcess> {
 
     private static final URI BASE_URI = URI.create("http://www.google.com");
