@@ -58,7 +58,7 @@ public class VisitorProcess {
     }
 
     public String getId() {
-        return id;
+        return this.id;
     }
 
     public void setId(final String id) {
@@ -68,7 +68,7 @@ public class VisitorProcess {
     }
 
     public URL getBaseURL() {
-        return baseURL;
+        return this.baseURL;
     }
 
     public void setBaseURL(final URL baseURL) {
@@ -76,7 +76,7 @@ public class VisitorProcess {
     }
 
     public ProcessStatus getStatus() {
-        return status;
+        return this.status;
     }
 
     public void setStatus(final ProcessStatus status) {
@@ -84,7 +84,7 @@ public class VisitorProcess {
     }
 
     public String getUpdateLink() {
-        return updateLink;
+        return this.updateLink;
     }
 
     public void setUpdateLink(final String updateLink) {
@@ -92,7 +92,7 @@ public class VisitorProcess {
     }
 
     public String getResultLink() {
-        return resultLink;
+        return this.resultLink;
     }
 
     public void setResultLink(final String resultLink) {
