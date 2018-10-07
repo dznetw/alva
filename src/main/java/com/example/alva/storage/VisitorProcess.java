@@ -110,12 +110,12 @@ public class VisitorProcess implements AutoCloseable {
 
     public LinkVisitorAnalytics getAnalyticsForLevel(final int recursionLevel) {
         if (!this.analytics.containsKey(recursionLevel)) {
-            this.analytics.put(recursionLevel, new LinkVisitorAnalytics());
+            this.analytics.put(recursionLevel, new LinkVisitorAnalytics(recursionLevel));
         }
         return this.analytics.get(recursionLevel);
     }
 
-    public void addFoundURIs(final int recursionLevel, final Queue<URI> uriAndCount) {
+    public void addFoundURIs(final int recursionLevel, final Queue<URI> uris) {
         if (this.status != ProcessStatus.ACTIVE) {
             return;
         }
@@ -123,7 +123,7 @@ public class VisitorProcess implements AutoCloseable {
         if (!this.workingStack.containsKey(recursionLevel)) {
             this.workingStack.put(recursionLevel, new LinkedBlockingQueue<>());
         }
-        this.workingStack.get(recursionLevel).addAll(uriAndCount);
+        this.workingStack.get(recursionLevel).addAll(uris);
     }
 
     public BlockingQueue<URI> takeURIs(final int recursionLevel) {
