@@ -17,6 +17,8 @@ public class AlvaApplication {
 
     @Bean
     public TaskExecutor taskExecutor() {
-        return new ThreadPoolTaskExecutor();
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(250);
+        return executor;
     }
 }
