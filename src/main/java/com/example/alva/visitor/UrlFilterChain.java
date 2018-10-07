@@ -70,7 +70,7 @@ final class UrlFilterChain {
             if (!uri.isAbsolute()) {
                 final URI absolute = baseURI.resolve(uri);
                 analytics.reportTransformedHyperlink(hyperlink, absolute.toString(),
-                    TransformationSuccess.TEXTUAL_HYPERLINK_TO_ABSOLUTE_URI);
+                    TransformationSuccess.TEXTUAL_HYPERLINK_TO_ABSOLUTE_URI_CONVERSION_SUCCESS);
                 return Optional.of(absolute);
             }
 
@@ -91,7 +91,7 @@ final class UrlFilterChain {
                         uri.getQuery(), null);
 
                 analytics.reportTransformedHyperlink(uri.toString(), shortenedURI.toString(),
-                    TransformationSuccess.DISCARDING_FRAGMENT);
+                    TransformationSuccess.DISCARDING_FRAGMENT_SUCCESS);
                 return shortenedURI;
             } catch (final URISyntaxException e) {
                 analytics.reportIgnoredHyperlink(uri.toString(), HyperlinkIssue.DISCARDING_FRAGMENT_FAILED);

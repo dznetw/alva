@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.servlet.http.HttpServletRequest;
 
-import com.example.alva.analytics.LinkVisitorAnalytics;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -25,8 +24,6 @@ public class VisitorProcess implements AutoCloseable {
     private String id;
     @JsonIgnore
     private final Map<Integer, BlockingQueue<URI>> workingStack = new ConcurrentHashMap<>();
-    @JsonIgnore
-    private final Map<Integer, LinkVisitorAnalytics> analytics = new ConcurrentHashMap<>();
     @JsonProperty("process_status")
     private ProcessStatus status = ProcessStatus.ACTIVE;
     @JsonProperty("update_link")
@@ -106,13 +103,6 @@ public class VisitorProcess implements AutoCloseable {
 
     public String getResultLink() {
         return this.resultLink;
-    }
-
-    public LinkVisitorAnalytics getAnalyticsForLevel(final int recursionLevel) {
-        if (!this.analytics.containsKey(recursionLevel)) {
-            this.analytics.put(recursionLevel, new LinkVisitorAnalytics(recursionLevel));
-        }
-        return this.analytics.get(recursionLevel);
     }
 
     public void addFoundURIs(final int recursionLevel, final Queue<URI> uris) {

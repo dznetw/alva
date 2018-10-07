@@ -9,6 +9,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.common.base.MoreObjects;
+
 public class LinkVisitorAnalytics {
 
     private final int recursionLevel;
@@ -68,5 +70,26 @@ public class LinkVisitorAnalytics {
                 issues.add(entry.getKey());
             }
         }
+    }
+
+    private static <K extends Enum<K>, V> String flatMap(final Map<K, Queue<V>> map) {
+        final StringBuilder builder = new StringBuilder(128);
+        builder.append('{');
+        for (final Map.Entry<K, Queue<V>> entry : map.entrySet()) {
+            builder.append('\n').append(entry.getKey().name()).append(':').append(entry.getValue().size()).append(',');
+        }
+        builder.deleteCharAt(builder.lastIndexOf(","));
+        return builder.append('}').toString();
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects
+            .toStringHelper(this)
+            .add("recursionLevel", this.recursionLevel)
+            .add("anchorIssues", flatMap(this.anchorIssues))
+            .add("transformationIssues", flatMap(this.transformationIssues))
+            .add("transformationSuccesses", flatMap(this.transformationSuccesses))
+            .toString();
     }
 }
