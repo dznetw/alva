@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.example.alva.analytics.LinkVisitorAnalytics;
 import com.example.alva.storage.VisitorProcess;
 import com.example.alva.visitor.LinkVisitor;
 
@@ -22,10 +21,9 @@ public class AsyncVisitorProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncVisitorProcessor.class);
 
     @Async
-    public CompletableFuture<Queue<Pair<URI, Integer>>> execute(final VisitorProcess visitorProcess,
-        final LinkVisitorAnalytics analytics) {
+    public CompletableFuture<Queue<Pair<URI, Integer>>> execute(final VisitorProcess visitorProcess) {
         try {
-            return CompletableFuture.completedFuture(new LinkVisitor(visitorProcess).visit(analytics));
+            return CompletableFuture.completedFuture(new LinkVisitor(visitorProcess).visit());
         } catch (final IOException e) {
             LOGGER.error("Could not open URL properly. Skipping Link.", e);
             return CompletableFuture.completedFuture(new LinkedList<>());

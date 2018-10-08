@@ -1,5 +1,6 @@
 package com.example.alva.ui;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import javax.servlet.http.HttpServletRequest;
@@ -25,7 +26,7 @@ import com.example.alva.storage.VisitorResult;
 @RequestMapping("/api/v1")
 public class RestAPIController {
 
-    private static final int MAX_RECURSION = 0;
+    private static final int MAX_RECURSION = 1;
     private static final Logger LOGGER = LoggerFactory.getLogger(RestAPIController.class);
     private final AsyncVisitorExecutionService executionService;
     private final ProcessStorage processStorage;
@@ -40,7 +41,8 @@ public class RestAPIController {
     }
 
     @PostMapping("/visitors")
-    public ResponseEntity<VisitorProcess> addNewVisit(final HttpServletRequest request, final String url) {
+    public ResponseEntity<VisitorProcess> addNewVisit(final HttpServletRequest request, final String url)
+        throws InterruptedException {
         try {
             final VisitorProcess process = new VisitorProcess(request, new URL(url));
             final VisitorResult result = new VisitorResult(process);
@@ -50,9 +52,12 @@ public class RestAPIController {
             this.executionService.execute(process, result, MAX_RECURSION);
 
             return ResponseEntity.ok(process);
-        } catch (MalformedURLException e) {
+        } catch (final MalformedURLException e) {
             LOGGER.error("Encountered invalid URL \"{}\". Answering with BAD_REQUEST.", url, e);
             return ResponseEntity.badRequest().build();
+        } catch (final IOException e) {
+            LOGGER.error("Unable to create new result. Answering with INTERNAL_SERVER_ERROR.", url, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

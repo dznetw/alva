@@ -1,5 +1,6 @@
 package com.example.alva.storage;
 
+import java.io.IOException;
 import java.net.URI;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,23 +17,29 @@ public class VisitorResultTest {
     private VisitorResult visitorResult;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         this.visitorResult = new VisitorResult(new VisitorProcess(TestConstants.DEFAULT_URL));
-        this.visitorResult.increaseCount(Pair.of(EXISTING_URI, 2));
+        this.addData(Pair.of(EXISTING_URI, 2));
     }
 
     @Test
     public void increaseCount_newURI() {
-        this.visitorResult.increaseCount(Pair.of(NEW_URI, 1));
+        this.addData(Pair.of(NEW_URI, 1));
 
         assertThat(this.visitorResult.getOccurrenceOfURI(NEW_URI)).isEqualTo(1);
     }
 
     @Test
     public void increaseCount_existingURI() {
-        this.visitorResult.increaseCount(Pair.of(EXISTING_URI, 1));
+        this.addData(Pair.of(EXISTING_URI, 1));
 
         assertThat(this.visitorResult.getOccurrenceOfURI(EXISTING_URI)).isEqualTo(3);
+    }
+
+    @Test
+    public void getNumberOfUniqueURIs_afterAddingNewURI() {
+        this.addData(Pair.of(NEW_URI, 1));
+        assertThat(this.visitorResult.getNumberOfUniqueURIs()).isEqualTo(2);
     }
 
     @Test
@@ -50,9 +57,8 @@ public class VisitorResultTest {
         assertThat(this.visitorResult.getNumberOfUniqueURIs()).isEqualTo(1);
     }
 
-    @Test
-    public void getNumberOfUniqueURIs_afterAddingNewURI() {
-        this.visitorResult.increaseCount(Pair.of(NEW_URI, 1));
-        assertThat(this.visitorResult.getNumberOfUniqueURIs()).isEqualTo(2);
+    private void addData(final Pair<URI, Integer> pair) {
+        this.visitorResult.increaseCount(pair);
+        this.visitorResult.updateBulk();
     }
 }

@@ -1,6 +1,101 @@
 <html>
 <header></header>
 <body>
-<h1>Hello World!</h1>
+<article class="markdown-body entry-content" itemprop="text"><h1>ALVA ~ Asynchronous Link Visitor Application</h1>
+    <h2>Description</h2>
+    <p>This Spring Boot application visits a specified URI and extracts from its HTML content any hyperlinks that
+        comply with certain criteria.
+        Each found link is logged and its occurrence counted. The procedure is applied recursively to each found
+        link.</p>
+    <p>URL Filtering Criteria</p>
+    <table>
+        <thead>
+        <tr>
+            <th>URI type</th>
+            <th>logged &amp; counted (y/n)</th>
+            <th>recursive examination (y/n)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>anchors containing <code>rel="nofollow"</code> attribute</td>
+            <td>n</td>
+            <td>n</td>
+        </tr>
+        <tr>
+            <td>internal anchors</td>
+            <td>n</td>
+            <td>n</td>
+        </tr>
+        <tr>
+            <td>URIs which do not return valid HTML content</td>
+            <td>y</td>
+            <td>n</td>
+        </tr>
+        <tr>
+            <td>URIs with fragments*</td>
+            <td>y</td>
+            <td>y</td>
+        </tr>
+        </tbody>
+    </table>
+    <p>* URIs with fragments are reduced to their simple path and then logged and counted</p>
+    <h2>How To Run Locally</h2>
+    <ol>
+        <li>Check out via git</li>
+        <li>build via mvn clean install</li>
+        <li>run the application locally<br>
+            (either by executing <code>com.example.alva.AlvaApplication</code> in your IDE, or by executing <code>mvn
+                spring-boot:run</code>)
+        </li>
+        <li>without further modification, your instance should be available at <code>localhost:8080</code></li>
+    </ol>
+    <h2>How To Use</h2>
+    <h3>Start A LinkVisit</h3>
+    <p>In order to start a link visit use following convenience path:<br>
+        <code>http://localhost:8080/new?url=&lt;YOUR_URL&gt;</code><br>
+        , while &lt;YOUR_URL&gt; is the URL you would like to visit.</p>
+    <p>This is a convenience mapping which calls the REST API under <code>POST localhost:8080/api/v1/visitors</code>
+        where <code>url</code> is an expected POST parameter.</p>
+    <h3>Check Your LinkVisit's Status</h3>
+    <p>As a response to your call to <code>http://localhost:8080/new?url=&lt;YOUR_URL&gt;</code> you should receive a
+        JSON which tells you about the newly created process (similar to this).</p>
+    <pre><code>{
+  "process_id" : "f34925fb-7548-4c9b-91db-216e02ebe0ac",
+  "process_status" : "ACTIVE",
+  "update_link" : "http://localhost:8080/api/v1/visitors/f34925fb-7548-4c9b-91db-216e02ebe0ac",
+  "result_link" : "http://localhost:8080/api/v1/visitors/f34925fb-7548-4c9b-91db-216e02ebe0ac/result",
+  "base_uri" : "&lt;YOUR_URL&gt;"
+}
+</code></pre>
+    <p>It points you to the associated <code>update_link</code> and <code>result_link</code>.
+        The <code>update_link</code> can be used to check the <code>process_status</code>; the <code>result_link</code>
+        will contain the end result but <em>only if the <code>process_status</code> is set to "DONE"</em>.</p>
+    <p>So, refresh your <code>update_link</code> until the <code>process_status</code> changes.</p>
+    <h3>Retrieving Your LinkVisit's Result</h3>
+    <p>After the <code>process_status</code> changes to "DONE", visit the <code>result_link</code> and you will receive
+        a JSON response containing found links and their associated count.</p>
+    <pre><code>{
+  "numberOfUniqueURIs" : 2695,
+  "process_id" : "f34925fb-7548-4c9b-91db-216e02ebe0ac",
+  "visited_urls" : {
+    &lt;A_URL&gt; : 1,
+    &lt;B_URL&gt; : 325,
+    &lt;C_URL&gt; : 231,
+    &lt;D_URL&gt; : 1,
+    &lt;E_URL&gt; : 34,
+    &lt;F_URL&gt; : 1,
+    &lt;G_URL&gt; : 5,
+    &lt;H_URL&gt; : 8,
+    &lt;I_URL&gt; : 87,
+    &lt;J_URL&gt; : 1,
+    ...
+  }
+}
+</code></pre>
+    <h3>Retention Policy</h3>
+    <p>The current implementation holds all data in-memory; an entity will be deleted after 1 (one) hour or when the
+        server restarts.</p>
+</article>
 </body>
 </html>

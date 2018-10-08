@@ -1,5 +1,6 @@
 package com.example.alva.storage;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -15,7 +16,7 @@ public class InMemoryResultStorageTest extends CacheBasedStorageContractVerifier
     private static final URI BASE_URI = URI.create("http://www.google.com");
     private static final UUID EXISTING_UUID = UUID.randomUUID();
 
-    public InMemoryResultStorageTest() throws MalformedURLException {
+    public InMemoryResultStorageTest() throws IOException {
 
         this(newPairFrom(createNewResult(EXISTING_UUID.toString())),
             newPairFrom(createNewResult(EXISTING_UUID.toString())),
@@ -28,7 +29,7 @@ public class InMemoryResultStorageTest extends CacheBasedStorageContractVerifier
         super(newPairFrom(existingEntity.getValue()), overridingEntity, missingEntity, nullEntity);
     }
 
-    private static VisitorResult createNewResult(final String id) throws MalformedURLException {
+    private static VisitorResult createNewResult(final String id) throws IOException {
         final VisitorProcess spy = Mockito.spy(new VisitorProcess(getBaseURL()));
         Mockito.when(spy.getId()).thenReturn(id);
         return new VisitorResult(spy);
@@ -43,7 +44,7 @@ public class InMemoryResultStorageTest extends CacheBasedStorageContractVerifier
     }
 
     @Test
-    public void getIdentifierFromValue() throws MalformedURLException {
+    public void getIdentifierFromValue() throws IOException {
         final VisitorResult result = new VisitorResult(new VisitorProcess(getBaseURL()));
         final String identifier = new InMemoryResultStorage().getIdentifierFromValue(result);
 

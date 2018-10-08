@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.example.alva.analytics.LinkVisitorAnalytics;
 import com.example.alva.storage.VisitorProcess;
 import com.google.common.base.Splitter;
 
@@ -24,13 +23,13 @@ public class LinkVisitor {
         this.process = Objects.requireNonNull(process);
     }
 
-    public Queue<Pair<URI, Integer>> visit(final LinkVisitorAnalytics linkVisitorAnalytics) throws IOException {
+    public Queue<Pair<URI, Integer>> visit() throws IOException {
         try (final InputStreamReader reader = new InputStreamReader(this.process.getBaseURL().openStream());
             final BufferedReader bufferedReader = new BufferedReader(reader)) {
 
             final Stream<String> lines = ReFormatter.reformatHTMLWithTagOnEachNewLine(bufferedReader);
 
-            return new UrlFilterChain(this.process.getBaseURI()).filterChildURLs(linkVisitorAnalytics, lines);
+            return new UrlFilterChain(this.process.getBaseURI()).filterChildURLs(lines);
         }
     }
 
