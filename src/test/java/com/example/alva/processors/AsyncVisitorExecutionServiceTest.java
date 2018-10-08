@@ -1,5 +1,7 @@
 package com.example.alva.processors;
 
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +38,7 @@ public class AsyncVisitorExecutionServiceTest {
     }
 
     @Test
-    public void execute_recursionOfZero() {
+    public void execute_recursionOfZero() throws IOException, InterruptedException {
         final VisitorProcess origin = new VisitorProcess(TestConstants.DEFAULT_URL);
         final VisitorResult result = new VisitorResult(origin);
 
@@ -66,6 +68,13 @@ public class AsyncVisitorExecutionServiceTest {
         public TaskExecutor taskExecutor() {
             final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
             executor.setCorePoolSize(250);
+            executor.setRejectedExecutionHandler((runnable, executor1) -> {
+                try {
+                    executor1.getQueue().put(runnable);
+                } catch (InterruptedException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
             return executor;
         }
     }

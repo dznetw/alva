@@ -19,7 +19,8 @@ public class NewProcessController {
     public NewProcessController(final RestAPIController apiController) {this.apiController = apiController;}
 
     @GetMapping("/new")
-    public ResponseEntity<VisitorProcess> startNewVisitor(HttpServletRequest request, @RequestParam final String url) {
+    public ResponseEntity<VisitorProcess> startNewVisitor(HttpServletRequest request, @RequestParam final String url)
+        throws InterruptedException {
         return this.apiController.addNewVisit(request, url);
     }
 }

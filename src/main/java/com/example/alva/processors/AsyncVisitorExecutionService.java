@@ -3,25 +3,21 @@ package com.example.alva.processors;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.example.alva.analytics.HyperlinkIssue;
-import com.example.alva.analytics.LinkVisitorAnalytics;
 import com.example.alva.storage.VisitorProcess;
 import com.example.alva.storage.VisitorResult;
 
 @Service
 public class AsyncVisitorExecutionService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AsyncVisitorExecutionService.class);
     private final AsyncVisitorProcessor visitorProcessor;
     private final AsyncContentTypeChecker contentTypeChecker;
 
@@ -37,64 +33,61 @@ public class AsyncVisitorExecutionService {
     }
 
     @Async
-    public void execute(final VisitorProcess visitorProcess, final VisitorResult result, final int maxRecursion) {
+    public void execute(final VisitorProcess visitorProcess, final VisitorResult result, final int maxRecursion)
+        throws InterruptedException {
         try (final VisitorProcess origin = visitorProcess) {
             final AtomicInteger recursionLevel = new AtomicInteger();
 
             do {
                 final int currentLevel = recursionLevel.get();
-                final LinkVisitorAnalytics analytics = new LinkVisitorAnalytics(currentLevel);
                 if (currentLevel == 0) {
-                    final Queue<URI> collect = this.executeSingleProcess(origin, result, analytics);
-                    origin.addFoundURIs(currentLevel, this.filterURIsDeliveringHTML(collect, analytics));
+                    final Queue<URI> collect = this.executeSingleProcess(origin, result);
+
+                    if (currentLevel < maxRecursion) {
+                        origin.addFoundURIs(currentLevel, this.filterURIsDeliveringHTML(collect));
+                    }
                 } else {
 
-                    origin
-                        .takeURIs(currentLevel)
-                        .parallelStream()
-                        .map(VisitorProcess::new)
-                        .map(process -> this.executeSingleProcess(process, result, analytics))
-                        .forEach(queue -> origin.addFoundURIs(currentLevel,
-                            this.filterURIsDeliveringHTML(queue, analytics)));
+                    final BlockingQueue<URI> uris = origin.takeURIs(currentLevel - 1);
+                    while (!uris.isEmpty()) {
+                        final URI taken = uris.take();
+                        try (final VisitorProcess process = new VisitorProcess(taken)) {
+                            final Queue<URI> queue = this.executeSingleProcess(process, result);
+
+                            if (currentLevel < maxRecursion) {
+                                origin.addFoundURIs(currentLevel, this.filterURIsDeliveringHTML(queue));
+                            }
+                        }
+                    }
                 }
 
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Analytics: {}", analytics);
-                }
                 recursionLevel.incrementAndGet();
-            } while (recursionLevel.get() < maxRecursion);
+            } while (recursionLevel.get() <= maxRecursion);
 
             takeRemainingURIs(origin, recursionLevel);
         }
     }
 
-    private Queue<URI> filterURIsDeliveringHTML(final Queue<URI> queue, final LinkVisitorAnalytics analytics) {
+    private Queue<URI> filterURIsDeliveringHTML(final Queue<URI> queue) {
         return queue
-            .parallelStream()
-            .filter(uri -> this.deliversHTMLContent(uri, analytics))
+            .parallelStream().filter(this::deliversHTMLContent)
             .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private Queue<URI> executeSingleProcess(final VisitorProcess visitorProcess, final VisitorResult result,
-        final LinkVisitorAnalytics analytics) {
-        return this.executeLinkVisitor(visitorProcess, analytics).parallelStream().map(uriIntegerPair -> {
+    private Queue<URI> executeSingleProcess(final VisitorProcess visitorProcess, final VisitorResult result) {
+        final Queue<URI> uris = this.executeLinkVisitor(visitorProcess).parallelStream().map(uriIntegerPair -> {
             result.increaseCount(uriIntegerPair);
             return uriIntegerPair.getLeft();
         }).collect(Collectors.toCollection(LinkedList::new));
+        result.updateBulk();
+        return uris;
     }
 
-    private Queue<Pair<URI, Integer>> executeLinkVisitor(final VisitorProcess visitorProcess,
-        final LinkVisitorAnalytics analytics) {
-        return this.visitorProcessor.execute(visitorProcess, analytics).join();
+    private Queue<Pair<URI, Integer>> executeLinkVisitor(final VisitorProcess visitorProcess) {
+        return this.visitorProcessor.execute(visitorProcess).join();
     }
 
-    private boolean deliversHTMLContent(final URI uri, final LinkVisitorAnalytics analytics) {
-        boolean deliversHTMLDocument = this.contentTypeChecker.deliversHTMLDocument(uri).join();
-
-        if (!deliversHTMLDocument) {
-            analytics.reportIgnoredHyperlink(uri.toString(), HyperlinkIssue.URI_DELIVERS_NO_HTML_CONTENT);
-        }
-
-        return deliversHTMLDocument;
+    private boolean deliversHTMLContent(final URI uri) {
+        return this.contentTypeChecker.deliversHTMLDocument(uri).join();
     }
 }

@@ -16,7 +16,6 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import com.example.alva.TestExcerpt;
-import com.example.alva.analytics.LinkVisitorAnalytics;
 import com.example.alva.processors.AsyncContentTypeChecker;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,8 +36,7 @@ public class UrlFilterChainTest {
     @Test
     public void filterChildURLs() {
         final UrlFilterChain urlFilterChain = new UrlFilterChain(TestExcerpt.getBaseUri());
-        final Queue<Pair<URI, Integer>> childURLs =
-            urlFilterChain.filterChildURLs(new LinkVisitorAnalytics(), TestExcerpt.streamLines());
+        final Queue<Pair<URI, Integer>> childURLs = urlFilterChain.filterChildURLs(TestExcerpt.streamLines());
 
         final List<String> hyperlinks = TestExcerpt.getOriginalHyperlinks();
         final List<String> internalAnchors = TestExcerpt.getInternalAnchors();
